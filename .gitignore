@@ -1,5 +1,7 @@
 data/kolmogorov/*
 data/channel_flow/*
 data/ks_equation/*
+kolmogorov_flow/trained_models/*
+kolmogorov_flow/trained_models_esn/*
 ks_equation/trained_models/*
 __pycache__/

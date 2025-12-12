@@ -7,10 +7,15 @@ import json
 import csv
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+current_file = os.path.abspath(__file__)
+main_dir = os.path.dirname(current_file)    
+project_root = os.path.abspath(os.path.join(main_dir, ".."))
 
-import models.trainer as trainer
-import models.hfno_1D_w as fno
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from models.trainer import *
+from models.hfno_1D import *
 from torch.utils.data import DataLoader, TensorDataset #to manage datasets and bash 
 
 ### FUNCTION DEFINITION ###
@@ -93,21 +98,21 @@ print("Pre-processing done!")
 ### MODEL ###
 
 
-layer_modes = [6,16]
-depth = 4
-width_MLP = 1024
-n_layers_MLP = 1
+layer_modes = [6,12]
+depth = 64
+width_MLP = 64
+n_layers_MLP = 2
 input_size = 1
 output_size = 1
 
 
-model = fno.HFNO_1D_W(layer_modes, depth, width_MLP, n_layers_MLP, input_size, output_size)
+model = HFNO_1D(layer_modes, depth, width_MLP, n_layers_MLP, input_size, output_size)
 
 
 
 print("Start training...")
 
-epochs = 100
+epochs = 150
 learning_rate = 0.001
 wd = 0.000001
 loss_name = "MSE"
@@ -118,14 +123,14 @@ elif loss_name=="L1":
     loss = torch.nn.L1Loss()
 
 
-dict_loss = trainer.train_fourier_1D(model=model,
-                                  training_set=training_set,
-                                  testing_set=testing_set,
-                                  epochs=epochs,
-                                  learning_rate=learning_rate,
-                                  validation_set=None,
-                                  wd=wd,
-                                  l=loss)
+dict_loss = train_fourier_1D(model=model,
+                             training_set=training_set,
+                             testing_set=testing_set,
+                             epochs=epochs,
+                             learning_rate=learning_rate,
+                             validation_set=None,
+                             wd=wd,
+                             l=loss)
 
 print("Training done!")
 
@@ -144,7 +149,6 @@ with torch.no_grad():
         rel_test_err += torch.sqrt(torch.mean((output_pred_batch-output_batch)**2)/torch.mean(output_batch**2)).item()
     rel_test_err /= len(testing_set)
 
-    rel_val_err = 0
 
 print("Trainig error: {:.3f}\nTesting error: {:.3f}".format(rel_train_err, rel_test_err))
 
@@ -185,7 +189,7 @@ if save == "y":
                             "epochs": epochs,
                             "w_pen": wd,
                             "loss_name": loss_name,
-                            "final_test_error": rel_val_err}
+                            "final_test_error": rel_test_err}
                             
 
     csv_filename = "model_hyperparameters.csv"

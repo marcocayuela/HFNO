@@ -198,7 +198,7 @@ class HFNO2D_rect_w(nn.Module):
             z = torch.sum(torch.stack([fourier_parts[i] for i in indexes]), axis=0)
 
         if add_w:
-            linear_part = self.W(fft_out).permute(0, 2, 3, 1)
+            linear_part = self.W(x).permute(0, 2, 3, 1)
             z += linear_part 
         return z
     
