@@ -2,10 +2,18 @@ import csv
 import json
 import os 
 import h5py
+import sys 
 
 import torch
 import numpy as np
 
+
+current_file = os.path.abspath(__file__)
+main_dir = os.path.dirname(current_file)    
+project_root = os.path.abspath(os.path.join(main_dir, ".."))
+
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 from models.ESN import ESN
 
 
@@ -40,7 +48,7 @@ print("Importation done!")
 
 
 ## ENTER MODEL ###
-num_model = 1
+num_model = 10
 ##################
 
 last_mode_ESN = 15
@@ -50,17 +58,9 @@ alpha = 1e-4
 
 
 model_name = "model_"+str(num_model)+".pt"
-fno_model = torch.load(os.path.join("./trained_models/fno",model_name))
+fno_model = torch.load(os.path.join("./trained_models/fno",model_name), weights_only=False)
 
 csv_filename = './trained_models/fno/model_hyperparameters.csv'
-with open(csv_filename, mode='r', newline='', encoding='utf-8') as file:
-
-    reader = csv.DictReader(file)
-   
-    for i, row in enumerate(reader, start=1):
-        if row["model_name"] == "model_"+str(num_model):
-            model_info = row
-            break
 
 
 losses_filename = "losses_"+str(num_model)+".json"
@@ -184,8 +184,8 @@ with torch.no_grad():
 print("In Fourier space\nTrainig error: {:.3f}\nTesting error: {:.3f}\n".format(rel_train_err, rel_test_err))
 
 
-output_esn_train = np.zeros((n_train-washout[0], resolution, resolution//2+1, 2), dtype=np.cfloat)
-output_esn_test = np.zeros((n_test-washout[0], resolution, resolution//2+1, 2), dtype=np.cfloat)
+output_esn_train = np.zeros((n_train-washout[0], resolution, resolution//2+1, 2), dtype=np.complex128)
+output_esn_test = np.zeros((n_test-washout[0], resolution, resolution//2+1, 2), dtype=np.complex128)
 
 pred_esn_train = esn.predict(W_input_train)
 pred_esn_test = esn.predict(W_input_test)
@@ -229,7 +229,6 @@ print("In physical space\nError esn train: {:.3f}\nError esn test: {:.3f}".forma
 combined_model_dict = {
     "fno_model": fno_model,
     "esn_model": esn,
-    "model_hyperparameters": model_info,
     "losses": dict_losses,
     "fno_error_train": fno_error_train.item(),
     "fno_error_test": fno_error_test.item(),

@@ -6,6 +6,14 @@ import glob
 import json
 import csv
 import h5py
+import sys
+
+current_file = os.path.abspath(__file__)
+main_dir = os.path.dirname(current_file)    
+project_root = os.path.abspath(os.path.join(main_dir, ".."))
+
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 import models.trainer as trainer
 import models.hfno_2D as fno
@@ -100,7 +108,7 @@ output_size = 2
 res = 64
 #last_modes_cutoff = modes[1]
 
-model = fno.HFNO2D_l2(modes, depth, width_MLP, n_layers_MLP, input_size, output_size, res)
+model = fno.HFNO_2D(modes, depth, width_MLP, n_layers_MLP, input_size, output_size, res)
 #model = fno.FNO2D_v2_overlap(modes_start, modes_end, depth, width_MLP, n_layers_MLP, input_size, output_size, res)
 #model = fno.FNO2D(modes, 8, depth, width_MLP, n_layers_MLP, input_size, output_size)
 #model = fno.FNO2D_v2_CNN(modes, depth, width_MLP, n_layers_MLP, input_size, output_size, res, last_modes_cutoff=k_targets[0.99999]*64)
@@ -108,7 +116,7 @@ model = fno.HFNO2D_l2(modes, depth, width_MLP, n_layers_MLP, input_size, output_
 ### TRAINING ###
 
 print("Start training...")
-epochs = 30
+epochs = 100
 learning_rate = 0.001
 wd = 0.001
 loss_name = "MSE"
@@ -119,7 +127,7 @@ elif loss_name=="L1":
     loss = torch.nn.L1Loss()
 
 
-dict_loss = trainer.train_fourier(model=model,
+dict_loss = trainer.train_fourier_2D(model=model,
                                   training_set=training_set,
                                   testing_set=testing_set,
                                   epochs=epochs,
@@ -145,7 +153,6 @@ with torch.no_grad():
         rel_test_err += torch.sqrt(torch.mean((output_pred_batch-output_batch)**2)/torch.mean(output_batch**2)).item()
     rel_test_err /= len(testing_set)
 
-    rel_val_err = 0
 
 print("Trainig error: {:.3f}\nTesting error: {:.3f}".format(rel_train_err, rel_test_err))
 
@@ -186,7 +193,7 @@ if save == "y":
                             "epochs": epochs,
                             "w_pen": wd,
                             "loss_name": loss_name,
-                            "final_test_error": rel_val_err}
+                            "final_test_error": rel_test_err}
                             
 
     csv_filename = "model_hyperparameters.csv"

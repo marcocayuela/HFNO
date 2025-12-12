@@ -8,15 +8,18 @@ import numpy as np
 
 import sys
 
-# Ajouter le chemin du dossier parent au sys.path
-# Use the current working directory as the base path in Jupyter Notebook
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
+current_file = os.path.abspath(__file__)
+main_dir = os.path.dirname(current_file)    
+project_root = os.path.abspath(os.path.join(main_dir, ".."))
+
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 # Importer le fichier ESN.py depuis le sous-dossier
 from models.ESN import ESN
 
 import models.trainer as trainer
-import models.hfno_2D_ww as fno
+import models.hfno_2D as fno
 from torch.utils.data import DataLoader, TensorDataset #to manage datasets and bash 
 
 import matplotlib.pyplot as plt
@@ -36,7 +39,7 @@ def print_carac(dt, ndim, nf, nk, re, resolution, time):
 
 print("Data importation...")
 
-filename = "../data/kolmogorov/RE90/results2.h5"
+filename = "../data/kolmogorov/RE34/results9.h5"
 
 with h5py.File(filename, "r") as f:
 
@@ -77,8 +80,8 @@ n_test = input_test.shape[0]
 ### MODEL LOADING ###
 
 
-model_name = "re90_4_8_15"
-loaded_combined_model_dict = torch.load(os.path.join("./trained_models_esn",model_name+".pt"))
+model_name = "model_1"
+loaded_combined_model_dict = torch.load(os.path.join("./trained_models_esn",model_name+".pt"), weights_only=False)
 
 # Accéder aux modèles
 fno_model = loaded_combined_model_dict["fno_model"]
@@ -131,6 +134,7 @@ def esn_output(residuals, k_cutoff_end, k_cutoff_start=0):
     return W_output
 
 
+print("Fno predictions...")
 with torch.no_grad():
     preds_fno_train = fno_model(input_train)
     preds_fno_test = fno_model(input_test)
@@ -138,7 +142,7 @@ with torch.no_grad():
     residuals_train = output_train - preds_fno_train
     residuals_test = output_test - preds_fno_test
 
-
+print("Esn predictions...")
 W_input_train = esn_input(input_train, k_start_esn, k_end_esn)
 W_output_train = esn_output(residuals_train, k_end_esn, k_start_esn)
 
@@ -151,8 +155,8 @@ W_output_test = esn_output(residuals_test, k_end_esn, k_start_esn)
 ### Prediction with ESN ###
 
 if len(fno_model.modes)==2:
-    output_esn_train = np.zeros((n_train-washout[0], resolution, resolution//2+1, 2), dtype=np.cfloat)
-    output_esn_test = np.zeros((n_test-washout[0], resolution, resolution//2+1, 2), dtype=np.cfloat)
+    output_esn_train = np.zeros((n_train-washout[0], resolution, resolution//2+1, 2), dtype=np.complex128)
+    output_esn_test = np.zeros((n_test-washout[0], resolution, resolution//2+1, 2), dtype=np.complex128)
 
     pred_esn_train = esn_model.predict(W_input_train)
     pred_esn_test = esn_model.predict(W_input_test)
@@ -170,8 +174,8 @@ if len(fno_model.modes)==2:
     rk_magnitude = k_magnitude[:,:resolution//2+1]
 
     mask = np.logical_and(rk_magnitude <= k_end_esn, rk_magnitude >= k_start_esn)
-    output_esn_train = np.zeros((n_train-washout[0], resolution, resolution//2+1, 2), dtype=np.cfloat)
-    output_esn_test = np.zeros((n_test-washout[0], resolution, resolution//2+1, 2), dtype=np.cfloat)
+    output_esn_train = np.zeros((n_train-washout[0], resolution, resolution//2+1, 2), dtype=np.complex128)
+    output_esn_test = np.zeros((n_test-washout[0], resolution, resolution//2+1, 2), dtype=np.complex128)
 
     pred_esn_train = esn_model.predict(W_input_train)
     pred_esn_test = esn_model.predict(W_input_test)
@@ -210,7 +214,9 @@ if len(fno_model.modes)==2:
     error_test = output_test[100:] - full_pred_test
 
 
-    save=False
+    save=True
+    if not os.path.exists("./plot_models"):
+        os.mkdir("./plot_models")
     if not os.path.exists(os.path.join("./plot_models",model_name)):
         os.mkdir(os.path.join("./plot_models",model_name))
         save_path = os.path.join("./plot_models", model_name)
@@ -287,10 +293,11 @@ if len(fno_model.modes)==2:
     plt.title('Energy Spectrum in Frequency Domain (Log-Log Plot)')
     plt.grid(True)
     plt.legend()
-    plt.show()
-
     if save:
         plt.savefig(os.path.join(save_path, "energy_spectrum_train.png"))
+    plt.show()
+
+
 
 
     def compute_vorticity(vel_field):
@@ -338,11 +345,11 @@ if len(fno_model.modes)==2:
 
     plt.colorbar(c, ax=axs)
     fig.suptitle("Vorticity of differents snapshots in training set")
-    plt.show()
+
 
     if save:
         plt.savefig(os.path.join(save_path, "vorticity_train.png"))
-
+    plt.show()
 
 
     ###Test###
@@ -378,11 +385,11 @@ if len(fno_model.modes)==2:
     plt.title('Energy Spectrum in Frequency Domain (Log-Log Plot)')
     plt.grid(True)
     plt.legend()
-    plt.show()
+ 
 
     if save:
         plt.savefig(os.path.join(save_path, "energy_spectrum_test.png"))
-
+    plt.show()
 
     def compute_vorticity(vel_field):
         u = vel_field[..., 0]  # shape (1000, 64, 64)
@@ -429,12 +436,11 @@ if len(fno_model.modes)==2:
 
     plt.colorbar(c, ax=axs)
     fig.suptitle("Vorticity of differents snapshots in testing set")
-    plt.show()
 
 
     if save:
         plt.savefig(os.path.join(save_path, "vorticity_test.png"))
-
+    plt.show()
 
     ### WASSERSTEIN DISTANCE ###
 
@@ -505,11 +511,11 @@ if len(fno_model.modes)==2:
     fig.legend(loc="upper right", bbox_to_anchor=(1, 0.9), bbox_transform=ax1.transAxes)
 
     plt.title("Wasserstein Distance and L2 Error Over Time (Train)")
-    plt.show()
+    
 
     if save:
         plt.savefig(os.path.join(save_path, "error_train.png"))
-
+    plt.show()
     # Calcul de l'erreur L2 pour le test set
     l2_error_test = np.zeros((n_test - washout[0],))
     for i in range(n_test - washout[0]):
@@ -539,11 +545,11 @@ if len(fno_model.modes)==2:
     fig.legend(loc="upper right", bbox_to_anchor=(1, 0.9), bbox_transform=ax1.transAxes)
 
     plt.title("Wasserstein Distance and L2 Error Over Time (Test)")
-    plt.show()
+    
 
     if save:
         plt.savefig(os.path.join(save_path, "error_test.png"))
-
+    plt.show()
 
 
     fig, axs = plt.subplots(6,4, figsize=(15,12))
@@ -717,8 +723,8 @@ if len(fno_model.modes)==2:
 
 
 if len(fno_model.modes)==1:
-    output_esn_train = np.zeros((n_train-washout[0], resolution, resolution//2+1, 2), dtype=np.cfloat)
-    output_esn_test = np.zeros((n_test-washout[0], resolution, resolution//2+1, 2), dtype=np.cfloat)
+    output_esn_train = np.zeros((n_train-washout[0], resolution, resolution//2+1, 2), dtype=np.complex128)
+    output_esn_test = np.zeros((n_test-washout[0], resolution, resolution//2+1, 2), dtype=np.complex128)
 
     pred_esn_train = esn_model.predict(W_input_train)
     pred_esn_test = esn_model.predict(W_input_test)
@@ -736,8 +742,8 @@ if len(fno_model.modes)==1:
     rk_magnitude = k_magnitude[:,:resolution//2+1]
 
     mask = np.logical_and(rk_magnitude <= k_end_esn, rk_magnitude >= k_start_esn)
-    output_esn_train = np.zeros((n_train-washout[0], resolution, resolution//2+1, 2), dtype=np.cfloat)
-    output_esn_test = np.zeros((n_test-washout[0], resolution, resolution//2+1, 2), dtype=np.cfloat)
+    output_esn_train = np.zeros((n_train-washout[0], resolution, resolution//2+1, 2), dtype=np.complex128)
+    output_esn_test = np.zeros((n_test-washout[0], resolution, resolution//2+1, 2), dtype=np.complex128)
 
     pred_esn_train = esn_model.predict(W_input_train)
     pred_esn_test = esn_model.predict(W_input_test)
@@ -1089,10 +1095,11 @@ if len(fno_model.modes)==1:
     fig.legend(loc="upper right", bbox_to_anchor=(1, 0.9), bbox_transform=ax1.transAxes)
 
     plt.title("Wasserstein Distance and L2 Error Over Time (Test)")
-    plt.show()
+    
 
     if save:
         plt.savefig(os.path.join(save_path, "error_test.png"))
+    plt.show()
 
     
     
