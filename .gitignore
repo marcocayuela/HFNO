@@ -6,7 +6,8 @@ kolmogorov_flow/trained_models_esn/*
 ks_equation/trained_models/*
 __pycache__/
 runs/*
+!runs/kolmogorov
+runs/kolmogorov/*
 !runs/kolmogorov/train_fno.py
-notebooks/*
 src/kolmogorov_flow/
 src/ks_equation_prov
