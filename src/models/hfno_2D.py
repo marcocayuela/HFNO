@@ -269,8 +269,18 @@ class HFNO_2D(nn.Module):
         self.mask_res = (self.rk_magnitude <= self.modes[-1])
 
         self.residual = residual
-        if self.residual=="linear":
+        if self.residual == "linear":
             self.W = nn.Conv2d(self.depth, self.output_size, 1, padding='same', device=self.device)
+
+        if self.residual == "cnn":
+            self.W = nn.Sequential(
+                nn.Conv2d(self.depth, 32, 3, padding="same", device=self.device),
+                nn.Conv2d(32, 64, 3, padding="same", device=self.device),
+                nn.Conv2d(64, 32, 3, padding="same", device=self.device),
+                nn.Conv2d(32, 8, 3, padding="same", device=self.device),
+                nn.Conv2d(8, self.output_size, 3, padding="same", device=self.device)
+            )
+        
 
 
     def count_parameters(self):
