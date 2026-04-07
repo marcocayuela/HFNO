@@ -8,6 +8,7 @@ __pycache__/
 runs/*
 !runs/kolmogorov
 runs/kolmogorov/*
-!runs/kolmogorov/train_fno.py
+!runs/kolmogorov/train_hfno.py
+!runs/kolmogorov/run_hfno.sh
 src/kolmogorov_flow/
 src/ks_equation_prov
