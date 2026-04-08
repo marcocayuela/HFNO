@@ -31,7 +31,7 @@ class IntegralKernel2D(nn.Module):
         dv = x.shape[1]  # Lifting-dimension
         n = x.shape[-1]  # Number of grid points where input and intermediate states are evaluated
 
-        out_ft = torch.zeros(batchsize, self.out_channels, self.modes_x, self.modes_y, device=x.device, dtype=torch.cfloat, device=self.device)
+        out_ft = torch.zeros(batchsize, self.out_channels, self.modes_x, self.modes_y, device=x.device, dtype=torch.cfloat)
         # Compute Fourier coefficients
         x_ft = torch.fft.rfft2(x)
         # Use compl_mul1d to perform the multiplication between the relevant Fourier Modes and self.weights and fill the tensor out_tf with the corresponding values
