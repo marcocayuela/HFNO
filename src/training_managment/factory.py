@@ -94,5 +94,7 @@ class Factory():
                                        modes_y = args["modes"],
                                        width=args["width"],
                                        l=args["l"],
+                                       input_size=args["input_size"],
+                                        output_size=args["output_size"],
                                        n_layer=args["n_layer"],
                                        device=device, **kwargs)
