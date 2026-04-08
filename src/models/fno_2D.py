@@ -103,7 +103,7 @@ class FNO2D(nn.Module):
         #self.Q = nn.Sequential(nn.Linear(self.width, self.width), self.activation, nn.Linear(self.width, 1))
 
 
-    def forward(self, x, input_grid):
+    def forward(self, x):
         # input_grid must be the concatenation of X and Y (meshgrids) shape must be (x_size, y_size, 2)
         # shape of x is (batch_size, x_size, y_size)
         
