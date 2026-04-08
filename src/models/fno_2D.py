@@ -57,7 +57,7 @@ class FourierLayer2D(nn.Module):
 
 
 class FNO2D(nn.Module):
-    def __init__(self, modes_x, modes_y, width, l, n_layer=4, hidden_proj=None, device="cpu"):
+    def __init__(self, modes_x, modes_y, width, l, input_size, output_size,n_layer=4, hidden_proj=None, device="cpu"):
         super(FNO2D, self).__init__()
 
         """
@@ -78,8 +78,8 @@ class FNO2D(nn.Module):
         self.width = width  # This is d_v
         self.l = l #kernel size in linear transformation
         self.n_layer = n_layer #nbr of layers 
-        self.input_size = 2 
-        self.output_size = 2
+        self.input_size = input_size 
+        self.output_size = output_size
         
         if not hidden_proj:
             self.hidden_proj = self.width
@@ -91,7 +91,7 @@ class FNO2D(nn.Module):
         self.activation = nn.LeakyReLU()
 
         # Lifting transformation, corresponding to a simple linear transformation
-        self.P = nn.Linear(input_size, self.width)  # input channel is 5: (u(x,y),v(x,y),w,(x,y) x, y)
+        self.P = nn.Linear(self.input_size, self.width)  # input channel is 5: (u(x,y),v(x,y),w,(x,y) x, y)
         
         
         # n_l sequential layers
@@ -101,7 +101,7 @@ class FNO2D(nn.Module):
 
 
         # Projection layer
-        self.Q = nn.Sequential(nn.Linear(self.width, self.hidden_proj), self.activation, nn.Linear(self.hidden_proj, output_size))
+        self.Q = nn.Sequential(nn.Linear(self.width, self.hidden_proj), self.activation, nn.Linear(self.hidden_proj, self.output_size))
         #self.Q = nn.Sequential(nn.Linear(self.width, self.width), self.activation, nn.Linear(self.width, 1))
 
 
