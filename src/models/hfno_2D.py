@@ -240,8 +240,10 @@ class HFNO_2D(nn.Module):
             self.k_magnitude = np.maximum(np.abs(kx), np.abs(ky))
         elif self.mode_separation=="L1":
             self.k_magnitude = np.abs(kx) + np.abs(ky)
-        elif self.mode_separation=="custom":
-            self.k_magnitude = np.sqrt(kx**4 + ky**4)
+        elif self.mode_separation=="full_x":
+            self.k_magnitude = np.abs(ky)
+        elif self.mode_separation=="full_y":
+            self.k_magnitude = np.abs(kx)
 
         self.rk_magnitude = self.k_magnitude[:,:self.res//2+1]
 
