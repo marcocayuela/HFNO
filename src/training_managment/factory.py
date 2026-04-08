@@ -8,6 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../../../src'))
 import models.hfno_1D
 import models.fno_1D
 import models.hfno_2D
+import models.fno_2D
 
 def relative_rmse(y_pred, y_true, eps=1e-8):
     """
@@ -87,3 +88,11 @@ class Factory():
                                           res=args["res"],
                                           residual=args["residual"],
                                           mode_separation=args["mode_separation"], **kwargs)
+        
+        if name == "fno_2d":
+            return models.fno_2D.FNO2D(modes_x = args["modes"],
+                                       modes_y = args["modes"],
+                                       width=args["width"],
+                                       l=args["l"],
+                                       n_layer=args["n_layer"],
+                                       device=device, **kwargs)

@@ -5,11 +5,12 @@ import torch.nn.functional as F
 
 
 class IntegralKernel2D(nn.Module):
-    def __init__(self, in_channels, out_channels, modes_x, modes_y):
+    def __init__(self, in_channels, out_channels, modes_x, modes_y, device="cpu"):
         super(IntegralKernel2D, self).__init__()
         """
         2D Fourier layer. It computes FFT, linear transform, and Inverse FFT.
         """
+        self.device = device
         self.in_channels = in_channels  # This is d_v
         self.out_channels = out_channels  # This is d_v
         self.modes_x = modes_x  # This is k_max
@@ -18,7 +19,7 @@ class IntegralKernel2D(nn.Module):
         self.scale = (1 / (in_channels * out_channels))
 
         # Parametrization R of the kernel
-        self.weights = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes_x, self.modes_y, dtype=torch.cfloat))
+        self.weights = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes_x, self.modes_y, dtype=torch.cfloat, device=self.device))
 
     # Complex multiplication
     def compl_mul2d(self, input, weights):
@@ -30,7 +31,7 @@ class IntegralKernel2D(nn.Module):
         dv = x.shape[1]  # Lifting-dimension
         n = x.shape[-1]  # Number of grid points where input and intermediate states are evaluated
 
-        out_ft = torch.zeros(batchsize, self.out_channels, self.modes_x, self.modes_y, device=x.device, dtype=torch.cfloat)
+        out_ft = torch.zeros(batchsize, self.out_channels, self.modes_x, self.modes_y, device=x.device, dtype=torch.cfloat, device=self.device)
         # Compute Fourier coefficients
         x_ft = torch.fft.rfft2(x)
         # Use compl_mul1d to perform the multiplication between the relevant Fourier Modes and self.weights and fill the tensor out_tf with the corresponding values
@@ -43,11 +44,11 @@ class IntegralKernel2D(nn.Module):
 
 
 class FourierLayer2D(nn.Module):
-    def __init__(self, in_channels, out_channels, modes_x, modes_y, l):
+    def __init__(self, in_channels, out_channels, modes_x, modes_y, l, device="cpu"):
         super(FourierLayer2D, self).__init__()
 
-        self.int_kern = IntegralKernel2D(in_channels, out_channels, modes_x, modes_y)
-        self.w = nn.Conv2d(in_channels, out_channels, l, padding='same')
+        self.int_kern = IntegralKernel2D(in_channels, out_channels, modes_x, modes_y, device=device)
+        self.w = nn.Conv2d(in_channels, out_channels, l, padding='same', device=device)
 
     def forward(self, x):
 
@@ -56,7 +57,7 @@ class FourierLayer2D(nn.Module):
 
 
 class FNO2D(nn.Module):
-    def __init__(self, modes_x, modes_y, width, l, n_layer=4, hidden_proj=None):
+    def __init__(self, modes_x, modes_y, width, l, n_layer=4, hidden_proj=None, device="cpu"):
         super(FNO2D, self).__init__()
 
         """
@@ -71,7 +72,7 @@ class FNO2D(nn.Module):
         output: the solution at a later timestep
         output shape: (batchsize, x=s, c=1)
         """
-
+        self.device = device
         self.modes_x = modes_x  # This is k_modes
         self.modes_y = modes_y  # This is k_modes
         self.width = width  # This is d_v
@@ -94,7 +95,7 @@ class FNO2D(nn.Module):
         # n_l sequential layers
         self.layers = nn.ModuleList()
         for i in range(self.n_layer):
-            self.layers.append(FourierLayer2D(self.width, self.width, self.modes_x, self.modes_y, l))
+            self.layers.append(FourierLayer2D(self.width, self.width, self.modes_x, self.modes_y, l, device=self.device))
 
 
         # Projection layer
@@ -108,9 +109,9 @@ class FNO2D(nn.Module):
         
         
         batch_size = x.shape[0]
-        input_grid = input_grid.unsqueeze(0).repeat(batch_size, 1, 1, 1)
+        #input_grid = input_grid.unsqueeze(0).repeat(batch_size, 1, 1, 1)
         # Concatenate the grid to the input to gt the term v0
-        x = torch.cat((input_grid, x), dim=-1)
+        #x = torch.cat((input_grid, x), dim=-1)
 
         # Apply the lifting transformation
         x = self.P(x)
