@@ -78,6 +78,8 @@ class FNO2D(nn.Module):
         self.width = width  # This is d_v
         self.l = l #kernel size in linear transformation
         self.n_layer = n_layer #nbr of layers 
+        self.input_size = 2 
+        self.output_size = 2
         
         if not hidden_proj:
             self.hidden_proj = self.width
@@ -89,7 +91,7 @@ class FNO2D(nn.Module):
         self.activation = nn.LeakyReLU()
 
         # Lifting transformation, corresponding to a simple linear transformation
-        self.P = nn.Linear(5, self.width)  # input channel is 5: (u(x,y),v(x,y),w,(x,y) x, y)
+        self.P = nn.Linear(input_size, self.width)  # input channel is 5: (u(x,y),v(x,y),w,(x,y) x, y)
         
         
         # n_l sequential layers
@@ -99,7 +101,7 @@ class FNO2D(nn.Module):
 
 
         # Projection layer
-        self.Q = nn.Sequential(nn.Linear(self.width, self.hidden_proj), self.activation, nn.Linear(self.hidden_proj, 1))
+        self.Q = nn.Sequential(nn.Linear(self.width, self.hidden_proj), self.activation, nn.Linear(self.hidden_proj, output_size))
         #self.Q = nn.Sequential(nn.Linear(self.width, self.width), self.activation, nn.Linear(self.width, 1))
 
 
